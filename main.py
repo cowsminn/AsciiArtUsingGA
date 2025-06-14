@@ -7,6 +7,45 @@ from PIL import ImageStat
 import matplotlib.pyplot as plt
 import numpy as np
 
+def plot_fitness_evolution(fitness_history, output_dir, base_name):
+    if not fitness_history:
+        print("⚠️ Nu exista date de fitness pentru a genera graficul.")
+        return
+
+    # grupare pe generatie
+    from collections import defaultdict
+    gen_dict = defaultdict(list)
+    for entry in fitness_history:
+        gen_dict[entry['generation']].append(entry)
+
+    generations = sorted(gen_dict.keys())
+    best_avg = []
+    avg_avg = []
+    worst_avg = []
+
+    for gen in generations:
+        best_avg.append(np.mean([e['best'] for e in gen_dict[gen]]))
+        avg_avg.append(np.mean([e['avg'] for e in gen_dict[gen]]))
+        worst_avg.append(np.mean([e['worst'] for e in gen_dict[gen]]))
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(generations, best_avg, label='Best Fitness (medie)', color='green')
+    plt.plot(generations, avg_avg, label='Average Fitness (medie)', color='blue')
+    plt.plot(generations, worst_avg, label='Worst Fitness (medie)', color='red')
+    plt.xlabel('Generatie')
+    plt.ylabel('Fitness')
+    plt.title('Evolutia Fitness-ului Algoritmului Genetic (medie pe generatie)')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    plot_path = os.path.join(output_dir, f"{base_name}_fitness_evolution.png")
+    plt.savefig(plot_path)
+    print(f"📊 Grafic fitness salvat in: {plot_path}")
+    plt.close()
+
 w = 2
 h = 4
 
@@ -58,7 +97,7 @@ def brightness2char(brightness, x, y, image):
         return grayscale_ramp[int(brightness / 255 * (len(grayscale_ramp) - 1))]
 
 
-# brightness de la un title
+# brightness de la un tile
 def getBrightness(img):
     stat = ImageStat.Stat(img)
     return stat.mean[0]
@@ -67,7 +106,7 @@ def getBrightness(img):
 def generate_random_ascii_char():
     return random.choice(grayscale_ramp)
 
-# verifica daca se potricesc
+# verifica daca se potrivesc
 def fitness_char(char, x, y, image):
     tile = image.crop((x, y, x + w, y + h))
     b = getBrightness(tile)
@@ -95,13 +134,13 @@ def genetic_algorithm_for_bright_parts(x, y, image, population_size=None, genera
         scored = [(fitness_char(ind, x, y, image), ind) for ind in population]
         scored.sort(key=lambda x: x[0], reverse=True)
         
-        # Calculează statistici fitness pentru generația curentă
+        # Calculeaza statistici fitness pentru generatia curenta
         fitness_values = [score for score, _ in scored]
         best_fitness = max(fitness_values)
         avg_fitness = sum(fitness_values) / len(fitness_values)
         worst_fitness = min(fitness_values)
         
-        # Salvează statisticile
+        # Salveaza statisticile
         gen_stats = {
             'generation': generation + 1,
             'best': best_fitness,
@@ -127,7 +166,7 @@ def genetic_algorithm_for_bright_parts(x, y, image, population_size=None, genera
             if random.random() < mutation_rate:
                 population[i] = mutate_char(population[i])
     
-    # Adaugă datele locale la istoricul global
+    # Adauga datele locale la istoricul global
     fitness_history.extend(local_fitness_history)
                 
     best = sorted([(fitness_char(ind, x, y, image), ind) for ind in population], key=lambda x: x[0], reverse=True)[0][1]
@@ -217,16 +256,16 @@ def save_processed_images(image, base_name, output_dir="output", threshold=128):
     
     print(f"\n📊 STATISTICI IMAGINE:")
     print(f"  Total pixeli: {total_pixels}")
-    print(f"  Pixeli albi (≥{threshold}): {white_pixels} ({white_pixels/total_pixels*100:.1f}%)")
+    print(f"  Pixeli albi (>={threshold}): {white_pixels} ({white_pixels/total_pixels*100:.1f}%)")
     print(f"  Pixeli negri (<{threshold}): {black_pixels} ({black_pixels/total_pixels*100:.1f}%)")
 
 # argumente
 def parse_arguments():
-    parser = argparse.ArgumentParser(description='🎨 ASCII Art Generator cu Algoritm Genetic')
+    parser = argparse.ArgumentParser(description='ASCII Art Generator cu Algoritm Genetic')
     parser.add_argument('image', help='Calea catre imaginea de procesat')
     parser.add_argument('--analyze', action='store_true', help='Analizeaza impactul threshold-ului')
     parser.add_argument('--save', action='store_true', help='Salveaza imaginile procesate')
-    parser.add_argument('--fitness', action='store_true', help='Analizeaza evoluția fitness-ului')
+    parser.add_argument('--fitness', action='store_true', help='Analizeaza evolutia fitness-ului')
     parser.add_argument('--population', type=int, default=default_population_size, 
                        help=f'Dimensiunea populatiei pentru algoritmul genetic (default: {default_population_size})')
     parser.add_argument('--generations', type=int, default=default_generations, 
@@ -235,7 +274,7 @@ def parse_arguments():
     return parser.parse_args()
 
 if len(sys.argv) < 2:
-    print("🎨 ASCII Art Generator cu Algoritm Genetic")
+    print("ASCII Art Generator cu Algoritm Genetic")
     print("Utilizare: python main.py <imagine> [--analyze] [--save] [--fitness] [--population N] [--generations N]")
     print("\nExemple:")
     print("  python main.py photo.jpg")
@@ -244,7 +283,7 @@ if len(sys.argv) < 2:
     print("  python main.py image.jpg --fitness")
     print("  python main.py image.jpg --analyze --save --fitness")
     print("  python main.py image.jpg --population 20 --generations 10 --fitness")
-    print("\n💡 Pentru analiza fitness detaliată, folosește --fitness")
+    print("\nPentru analiza fitness detaliata, foloseste --fitness")
     sys.exit(1)
 
 args = parse_arguments()
@@ -264,14 +303,14 @@ base_name = os.path.splitext(os.path.basename(original_image_path))[0]
 image = image.convert("L")
 width, height = image.size
 
-# nr de titles
+# nr de tiles
 num_tiles_x = (width + w - 1) // w
 num_tiles_y = (height + h - 1) // h
 total_tiles = num_tiles_x * num_tiles_y
 
 # parametrii algoritm genetic
 print(f"The image will be split into {total_tiles} tiles.")
-print(f"🧬 Parametri Algoritm Genetic: Populatie={default_population_size}, Generatii={default_generations}")
+print(f"Parametri Algoritm Genetic: Populatie={default_population_size}, Generatii={default_generations}")
 
 
 x = 0
@@ -279,7 +318,7 @@ y = 0
 outputPath = "output.txt"
 outputFile = open(outputPath, "w")
 
-# Resetează istoricul fitness pentru rularea curentă
+# reset la isoricul fitness pentru fiecare rulare
 fitness_history = []
 
 while (y < height):
@@ -295,31 +334,30 @@ outputFile.close()
 
 if analyze_threshold:
     analyze_threshold_impact(image)
-    print(f"\n💡 Threshold curent: {brightness_threshold}")
+    print(f"\nThreshold curent: {brightness_threshold}")
     print("Pentru a schimba threshold-ul, editeaza brightness_threshold in cod")
 
-# if analyze_fitness and fitness_history:
-#     print(f"\n🧬 Generez graficul evoluției fitness-ului...")
-#     #plot_fitness_evolution(fitness_history, "output", base_name)
-# elif analyze_fitness and not fitness_history:
-#     print(f"\n⚠️ Nu există date de fitness (toate tile-urile au fost sub threshold)")
+if analyze_fitness and fitness_history:
+    print(f"\nGenerez graficul evolutiei fitness-ului...")
+    plot_fitness_evolution(fitness_history, "output", base_name)
+elif analyze_fitness and not fitness_history:
+    print(f"\nNu exista date de fitness (toate tile-urile au fost sub threshold)")
 
 if save_images:
-    print(f"\n💾 Salvez imaginile procesate...")
+    print(f"\nSalvez imaginile procesate...")
     save_processed_images(image, base_name, "output", brightness_threshold)
 
-print(f"\n✅ Gata! ASCII art-ul tau este salvat in {outputPath}")
-print("🌐 Poti sa-l vezi si in browser deschizand view_ascii.html")
-print(f"📊 Procesat {total_tiles} tile-uri cu succes!")
-print(f"🧬 Folosit: Populatie={default_population_size}, Generatii={default_generations}")
+print(f"\nGata! ASCII art-ul tau este salvat in {outputPath}")
+print("Poti sa-l vezi si in browser deschizand view_ascii.html")
+print(f"Procesat {total_tiles} tile-uri cu succes!")
+print(f"Folosit: Populatie={default_population_size}, Generatii={default_generations}")
 
 if analyze_fitness and fitness_history:
     bright_tiles_count = len(fitness_history) // default_generations if fitness_history else 0
-    print(f"📈 Tile-uri procesate cu algoritm genetic: {bright_tiles_count}")
-#     print(f"📊 Grafic fitness salvat în directorul 'output/'")
-# elif analyze_fitness:
-#     print(f"💡 Pentru a genera graficul fitness, folosește --fitness")
-
+    print(f"Tile-uri procesate cu algoritm genetic: {bright_tiles_count}")
+    print(f"Grafic fitness salvat in directorul 'output/'")
+elif analyze_fitness:
+    print(f"Pentru a genera graficul fitness, foloseste --fitness")
 if save_images:
-    print(f"📁 Imaginile procesate sunt in directorul 'output/'")
+    print(f"Imaginile procesate sunt in directorul 'output/'")
 
