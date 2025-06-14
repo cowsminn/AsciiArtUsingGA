@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Art</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #000;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        .controls {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .controls button {
+            background-color: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 10px 20px;
+            margin: 0 5px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        
+        .controls button:hover {
+            background-color: #555;
+        }
+        
+        .controls input[type="file"] {
+            margin: 0 10px;
+        }
+        
+        #ascii-art {
+            white-space: pre;
+            font-size: 8px;
+            line-height: 8px;
+            letter-spacing: 0;
+            word-spacing: 0;
+            text-align: center;
+            overflow: auto;
+            border: 1px solid #333;
+            padding: 10px;
+            background-color: #111;
+        }
+        
+        #ascii-art.instructions {
+            text-align: left;
+        }
+        
+        .zoom-controls {
+            margin-top: 10px;
+            text-align: center;
+        }
+        
+        .zoom-controls label {
+            margin-right: 10px;
+        }
+        
+        #zoom-slider {
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <div class="controls">
+            <input type="file" id="file-input" accept=".txt" />
+            <button onclick="toggleInvert()">Invert Colors</button>
+        </div>
+        
+        <div class="zoom-controls">
+            <label for="zoom-slider">Font Size:</label>
+            <input type="range" id="zoom-slider" min="4" max="20" value="8" oninput="updateFontSize(this.value)">
+            <span id="font-size-display">8px</span>
+        </div>
+        
+        <div id="ascii-art" class="instructions">
+            <div style="font-size: 16px; line-height: 24px;">
+                <strong>How to view your ASCII art:</strong><br><br>
+                    Use the file input above to select your output.txt file<br
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isInverted = false;
+        
+        // Load file when selected
+        document.getElementById('file-input').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                loadFile(file);
+            }
+        });
+        
+        // Load file function
+        function loadFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const asciiElement = document.getElementById('ascii-art');
+                asciiElement.textContent = e.target.result;
+                asciiElement.classList.remove('instructions');
+            };
+            reader.readAsText(file);
+        }
+        
+        // Load default output.txt file
+        function loadDefaultFile() {
+            fetch('output.txt')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    document.getElementById('ascii-art').textContent = data;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('ascii-art').innerHTML = `
+                        <div style="font-size: 16px; line-height: 24px;">
+                            <strong>Cannot load output.txt automatically</strong><br><br>
+                            This happens when opening the HTML file directly in your browser.<br><br>
+                            <strong>Solutions:</strong><br>
+                            1. Use the "Choose File" button above to select output.txt<br>
+                            2. Start a local web server (e.g., python -m http.server)<br>
+                            3. Copy the ASCII art content and paste it here manually<br><br>
+                            <strong>Your ASCII art from output.txt:</strong><br>
+                        </div>
+                        <div style="white-space: pre; font-family: monospace; font-size: 8px; line-height: 8px; margin-top: 10px; padding: 10px; border: 1px solid #555; background: #222;">##%+::=++::::-::::::::-+#-::::::
+**-::++**+=:-=--==-:-+##++=:::-:
+:-:-#*..*%+++::-::-=+#@+..*+::::
+:::-@#: .#%::::..:::=#%. =%*::::
+::::%%+:.:::::::::.:::::+#%+:-::
+::::-:::::::=::::::=::::::::::::
+:-::-::::::+*%+::#%*+:::::.:::::
+:::==::=*=:.:*=::#-.::+*:::.::-:
+:::-:-#%%%%#+*+-+++**%%%#*-:::::
+:::::+%%%%@@@@%==%@@@##%%#%-::::
+:::.:+#%%%@@#@+--#@@@#%#**+:--::
+:::.::==#%####---=%#%*+*#+-----:
+::-::::*#***@#:..=%*+**#+=-----:
+::--::::=*#*++= :+=+**=-++:-+--:
+::--:::--:***+=++##%=:=+*:----=:
+:::----++*+**#*#*#+:--==:-=---=:</div>
+                    `;
+                });
+        }
+        
+        // Toggle color inversion
+        function toggleInvert() {
+            const asciiElement = document.getElementById('ascii-art');
+            isInverted = !isInverted;
+            
+            if (isInverted) {
+                asciiElement.style.backgroundColor = '#fff';
+                asciiElement.style.color = '#000';
+                document.body.style.backgroundColor = '#fff';
+                document.body.style.color = '#000';
+            } else {
+                asciiElement.style.backgroundColor = '#111';
+                asciiElement.style.color = '#fff';
+                document.body.style.backgroundColor = '#000';
+                document.body.style.color = '#fff';
+            }
+        }
+
+        function updateFontSize(size) {
+            const asciiElement = document.getElementById('ascii-art');
+            asciiElement.style.fontSize = size + 'px';
+            asciiElement.style.lineHeight = size + 'px';
+            document.getElementById('font-size-display').textContent = size + 'px';
+        }
+        window.addEventListener('load', function() {
+        });
+    </script>
+</body>
+</html>
